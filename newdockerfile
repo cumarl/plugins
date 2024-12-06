@@ -1,0 +1,35 @@
+# Use the specified Jenkins base image
+FROM jenkins/jenkins:2.479.2-jdk17
+
+# Switch to root user to install required packages
+USER root
+
+# Install required packages
+RUN apt-get update && apt-get install -y \
+    unzip \
+    wget \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install AWS CLI v2
+RUN wget "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -O "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install \
+    && rm -rf awscliv2.zip aws
+
+# Install Terraform v1.4.4
+RUN wget https://releases.hashicorp.com/terraform/1.4.4/terraform_1.4.4_linux_amd64.zip \
+    && unzip terraform_1.4.4_linux_amd64.zip -d /usr/local/bin/ \
+    && rm terraform_1.4.4_linux_amd64.zip
+
+# Install Maven
+RUN wget https://dlcdn.apache.org/maven/maven-3/3.9.5/binaries/apache-maven-3.9.5-bin.tar.gz \
+    && tar -xvzf apache-maven-3.9.5-bin.tar.gz -C /opt/ \
+    && ln -s /opt/apache-maven-3.9.5/bin/mvn /usr/bin/mvn \
+    && rm apache-maven-3.9.5-bin.tar.gz
+
+# Ensure the container runs in interactive mode for terminal access
+CMD ["bash"]
+
+# Switch back to Jenkins user
+USER jenkins

@@ -1,0 +1,20 @@
+    # Define Mount Points Explicitly
+    mount_points = jsonencode([
+      {
+        "sourceVolume"  = "${var.name_prefix}-efs"
+        "containerPath" = "/var/jenkins_home"
+        "readOnly"      = false
+      },
+      {
+        "sourceVolume"  = "${var.name_prefix}-efs-maven-cache"
+        "containerPath" = "/var/jenkins_home/.m2"
+        "readOnly"      = false
+      },
+      {
+        "sourceVolume"  = "${var.name_prefix}-efs-npm-cache"
+        "containerPath" = "/var/jenkins_home/.npm"
+        "readOnly"      = false
+      }
+    ])
+
+  }

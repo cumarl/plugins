@@ -1,0 +1,73 @@
+# ===== Stage 1: Builder =====
+FROM alpine:latest AS builder
+
+ARG TERRAFORM_VERSION=1.10.0
+ARG MAVEN_VERSION=3.9.4
+
+RUN apk add --no-cache \
+    curl \
+    unzip \
+    ca-certificates \
+    gnupg \
+    tar \
+    nodejs \
+    npm \
+    # docker-cli for intermediate stage (not dockerd here)
+    docker-cli
+
+# Install Terraform
+RUN curl -fsSL "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip" -o terraform.zip \
+    && unzip terraform.zip \
+    && mv terraform /usr/local/bin/terraform \
+    && rm terraform.zip
+
+# Install Maven
+RUN curl -fsSL https://downloads.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz -o maven.tar.gz \
+    && tar -xzf maven.tar.gz -C /opt \
+    && ln -s /opt/apache-maven-${MAVEN_VERSION} /opt/maven \
+    && rm maven.tar.gz
+
+ENV PATH="$PATH:/opt/maven/bin"
+
+# Update npm to latest
+RUN npm install -g npm@latest
+
+# ===== Stage 2: Final Image =====
+FROM jenkins/inbound-agent:jdk17
+
+USER root
+
+# Install Docker (including the daemon)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates curl gnupg lsb-release \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+    https://download.docker.com/linux/debian $(. /etc/os-release && echo $VERSION_CODENAME) stable" \
+    > /etc/apt/sources.list.d/docker.list \
+    && apt-get update && apt-get install -y --no-install-recommends docker-ce docker-ce-cli \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy Terraform, Maven, Node, npm, and Docker CLI from builder
+COPY --from=builder /usr/local/bin/terraform /usr/local/bin/terraform
+COPY --from=builder /opt/maven /opt/maven
+COPY --from=builder /usr/bin/node /usr/bin/node
+COPY --from=builder /usr/bin/npm /usr/bin/npm
+COPY --from=builder /usr/bin/docker /usr/bin/docker
+
+# Create a symbolic link for 'mvn'
+RUN ln -s /opt/maven/bin/mvn /usr/local/bin/mvn
+
+# Add the jenkins user to the docker group so it can run docker without sudo
+#RUN groupadd docker && usermod -aG docker jenkins
+
+# Create an entrypoint script to start dockerd in background
+COPY dockerd-entrypoint.sh /usr/local/bin/dockerd-entrypoint.sh
+RUN chmod +x /usr/local/bin/dockerd-entrypoint.sh
+
+USER jenkins
+ENV PATH="$PATH:/opt/maven/bin"
+
+ENTRYPOINT ["/usr/local/bin/dockerd-entrypoint.sh"]
+CMD ["bash"]
+

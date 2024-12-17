@@ -1,0 +1,135 @@
+jenkins:
+    systemMessage: "Amazon Fargate Demo"
+    numExecutors: 0
+    remotingSecurity:
+      enabled: true
+    agentProtocols:
+        - "JNLP4-connect"
+    securityRealm:
+        local:
+            allowsSignup: false
+            users:
+                - id: ecsuser
+                  password: \$${ADMIN_PWD}
+    authorizationStrategy:
+        globalMatrix:
+            grantedPermissions:
+                - "Overall/Read:authenticated"
+                - "Job/Read:authenticated"
+                - "View/Read:authenticated"
+                - "Overall/Administer:authenticated"
+    crumbIssuer: "standard"
+    slaveAgentPort: 50000
+    clouds:
+        - ecs:
+              numExecutors: 1
+              allowedOverrides: "inheritFrom,label,memory,cpu,image"
+              credentialsId: ""
+              cluster: ${ecs_cluster_fargate}
+              name: "fargate-cloud"
+              regionName: ${cluster_region}
+              retentionTimeout: 10
+              jenkinsUrl: "http://${jenkins_cloud_map_name}:${jenkins_controller_port}"
+              tunnel: "${tunnel_through}"
+              templates:
+                  - cpu: "1024"
+                    image: "156025421306.dkr.ecr.us-east-1.amazonaws.com/devops/jenkins:maven-agent"
+                    label: "maven-agent"
+                    executionRole: ${execution_role_arn}
+                    launchType: "FARGATE"
+                    memory: 0
+                    memoryReservation: 2048
+                    networkMode: "awsvpc"
+                    privileged: false
+                    remoteFSRoot: "/home/jenkins"
+                    securityGroups: ${agent_security_groups}
+                    sharedMemorySize: 0
+                    subnets: ${subnets}
+                    templateName: "maven-agent"
+                    uniqueRemoteFSRoot: false
+                    taskrole: "${agents_task_role_arn}"
+                    enableExecuteCommand: true
+                    efsMountPoints: 
+                      - name: "maven-cache"
+                        containerPath: "/home/jenkins/.m2"
+                        readOnly: false
+                        fileSystemId: "${file_system_id}"
+                        accessPointId: "${access_point_id}"
+                        rootDirectory: "/"
+                        transitEncryption: true
+                        iam: true
+                    logDriver: "awslogs"
+                    logDriverOptions: 
+                      - name: "awslogs-region"
+                        value: "${cluster_region}"
+                      - name: "awslogs-group"
+                        value: "${agents_log_group}"
+                      - name: "awslogs-stream-prefix"
+                        value: "task"
+                  - cpu: "1024"
+                    image: "156025421306.dkr.ecr.us-east-1.amazonaws.com/devops/jenkins:maven-docker-agent20241216005808"
+                    label: "docker-agent"
+                    executionRole: ${execution_role_arn}
+                    launchType: "FARGATE"
+                    memory: 0
+                    memoryReservation: 2048
+                    networkMode: "awsvpc"
+                    privileged: false
+                    remoteFSRoot: "/home/jenkins"
+                    securityGroups: ${agent_security_groups}
+                    sharedMemorySize: 0
+                    subnets: ${subnets}
+                    templateName: "docker-agent"
+                    uniqueRemoteFSRoot: false
+                    taskrole: "${agents_task_role_arn}"
+                    enableExecuteCommand: true
+                    efsMountPoints: 
+                      - name: "maven-cache"
+                        containerPath: "/home/jenkins/.m2"
+                        readOnly: false
+                        fileSystemId: "${file_system_id}"
+                        accessPointId: "${access_point_id}"
+                        rootDirectory: "/"
+                        transitEncryption: true
+                        iam: true
+                    logDriver: "awslogs"
+                    logDriverOptions: 
+                      - name: "awslogs-region"
+                        value: "${cluster_region}"
+                      - name: "awslogs-group"
+                        value: "${agents_log_group}"
+                      - name: "awslogs-stream-prefix"
+                        value: "task"
+security:
+  sSHD:
+    port: -1
+jobs:
+  - script: >
+      pipelineJob('Simple job critical task') {
+        definition {
+          cps {
+            script('''
+              pipeline {
+                  agent {
+                      ecs {
+                          inheritFrom 'maven-agent'
+                      }
+                  }
+                  stages {
+                    stage('Test') {
+                        steps {
+                            script {
+                                sh "echo this was executed on non spot instance"
+                            }
+                            sh 'pwd'
+                            sh 'ls -al'
+                            sh 'sleep 30'
+                            sh 'echo sleep is done'
+                        }
+                    }
+                  }
+              }'''.stripIndent())
+              sandbox()
+          }
+        }
+      }

@@ -1,0 +1,62 @@
+# ===== Stage 1: Builder =====
+FROM alpine:latest AS builder
+
+ARG TERRAFORM_VERSION=1.10.0
+ARG MAVEN_VERSION=3.9.4
+
+# Install dependencies
+RUN apk add --no-cache \
+    curl \
+    unzip \
+    ca-certificates \
+    gnupg \
+    tar \
+    nodejs \
+    npm 
+
+# Install Terraform
+RUN curl -fsSL "https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip" -o terraform.zip \
+    && unzip terraform.zip \
+    && mv terraform /usr/local/bin/terraform \
+    && rm terraform.zip
+
+# Install Maven
+RUN curl -fsSL https://downloads.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz -o maven.tar.gz \
+    && tar -xzf maven.tar.gz -C /opt \
+    && ln -s /opt/apache-maven-${MAVEN_VERSION} /opt/maven \
+    && rm maven.tar.gz
+
+ENV PATH="$PATH:/opt/maven/bin"
+
+# Update npm to the latest
+RUN npm install -g npm@latest
+
+# ===== Stage 2: Final Image =====
+FROM jenkins/inbound-agent:jdk17
+
+USER root
+
+# Install dependencies needed for AWS CLI v2
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    unzip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install AWS CLI v2
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip awscliv2.zip \
+    && ./aws/install \
+    && rm -rf awscliv2.zip aws
+
+# Copy Terraform, Maven, Node, npm from builder
+COPY --from=builder /usr/local/bin/terraform /usr/local/bin/terraform
+COPY --from=builder /opt/maven /opt/maven
+COPY --from=builder /usr/bin/node /usr/bin/node
+COPY --from=builder /usr/bin/npm /usr/bin/npm
+
+# Create a symbolic link for 'mvn'
+RUN ln -s /opt/maven/bin/mvn /usr/local/bin/mvn
+
+USER jenkins
+ENV PATH="$PATH:/opt/maven/bin"
+

@@ -1,0 +1,73 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = "us-east-1"  # Change as needed
+        ECR_REGISTRY = "<account_id>.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        ECR_REPO = "my-app-repo"
+        IMAGE_TAG = "latest"
+    }
+
+    stages {
+        stage('Create Dockerfile') {
+            steps {
+                script {
+                    writeFile file: 'Dockerfile', text: '''
+                    FROM nginx:alpine
+                    COPY index.html /usr/share/nginx/html/index.html
+                    '''
+                    writeFile file: 'index.html', text: '<h1>Hello, ECR!</h1>'
+                }
+            }
+        }
+
+        stage('Create AWS CodeBuild Project') {
+            steps {
+                sh '''
+                aws codebuild create-project \
+                    --name my-codebuild-project \
+                    --source type=NO_SOURCE \
+                    --artifacts type=NO_ARTIFACTS \
+                    --environment type=LINUX_CONTAINER,computeType=BUILD_GENERAL1_SMALL,image=aws/codebuild/standard:5.0,privilegedMode=true \
+                    --service-role arn:aws:iam::<account_id>:role/CodeBuildServiceRole \
+                    --buildspec buildspec.yml \
+                    --region ${AWS_REGION} || true
+                '''
+            }
+        }
+
+        stage('Upload Dockerfile to S3') {
+            steps {
+                sh '''
+                aws s3 cp Dockerfile s3://my-codebuild-bucket/Dockerfile
+                aws s3 cp index.html s3://my-codebuild-bucket/index.html
+                '''
+            }
+        }
+
+        stage('Use AWS CodeBuild to Build and Push') {
+            steps {
+                sh '''
+                aws codebuild start-build \
+                    --project-name my-codebuild-project \
+                    --region ${AWS_REGION}
+                '''
+            }
+        }
+
+        stage('Output Image URI') {
+            steps {
+                script {
+                    def imageUri = "${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}"
+                    echo "Docker Image URI: ${imageUri}"
+                }
+            }
+        }
+
+        stage('Clean Jenkins Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+    }
+} 

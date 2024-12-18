@@ -1,0 +1,68 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = "us-east-1"  # Change as needed
+        ECR_REGISTRY = "<account_id>.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        ECR_REPO = "my-app-repo"
+        IMAGE_TAG = "latest"
+    }
+
+    stages {
+        stage('Check Docker Installation') {
+            steps {
+                sh '''
+                if ! command -v docker &> /dev/null
+                then
+                    echo "Docker could not be found, please install Docker."
+                    exit 1
+                fi
+                '''
+            }
+        }
+
+        stage('Create Dockerfile') {
+            steps {
+                script {
+                    writeFile file: 'Dockerfile', text: '''
+                    FROM nginx:alpine
+                    COPY index.html /usr/share/nginx/html/index.html
+                    '''
+                    writeFile file: 'index.html', text: '<h1>Hello, ECR!</h1>'
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                docker build -t ${ECR_REPO}:${IMAGE_TAG} .
+                '''
+            }
+        }
+
+        stage('Login to ECR') {
+            steps {
+                sh '''
+                aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                '''
+            }
+        }
+
+        stage('Tag Docker Image') {
+            steps {
+                sh '''
+                docker tag ${ECR_REPO}:${IMAGE_TAG} ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}
+                '''
+            }
+        }
+
+        stage('Push Docker Image to ECR') {
+            steps {
+                sh '''
+                docker push ${ECR_REGISTRY}/${ECR_REPO}:${IMAGE_TAG}
+                '''
+            }
+        }
+    }
+} 

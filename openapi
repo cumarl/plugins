@@ -1,0 +1,36 @@
+<build>
+    <plugins>
+        <plugin>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-maven-plugin</artifactId>
+            <version>1.6.15</version>
+            <executions>
+                <execution>
+                    <goals>
+                        <goal>generate</goal>
+                    </goals>
+                    <configuration>
+                        <outputFileName>openapi.yaml</outputFileName>
+                        <outputDir>${project.build.directory}</outputDir>
+                    </configuration>
+                </execution>
+            </executions>
+        </plugin>
+    </plugins>
+</build>
+
+
+
+<dependencies>
+    <!-- Springdoc OpenAPI for Spring Boot -->
+    <dependency>
+        <groupId>org.springdoc</groupId>
+        <artifactId>springdoc-openapi-ui</artifactId>
+        <version>1.6.15</version> <!-- Use the latest version -->
+    </dependency>
+    <dependency>
+        <groupId>org.springdoc</groupId>
+        <artifactId>springdoc-openapi-webmvc-core</artifactId>
+        <version>1.6.15</version> <!-- Use the latest version -->
+    </dependency>
+</dependencies>

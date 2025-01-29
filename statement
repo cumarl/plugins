@@ -1,0 +1,6 @@
+Write a professional problem statement  for what is described below
+API documentation and test automation
+The proposed project aims to develop a comprehensive API documentation system alongside a robust automated testing suite for APIs. 
+This hackathon project not only addresses critical aspects of API development—documentation and testing but also lays the groundwork for building secure, reliable applications that meet modern software demands.
+Currently functional testing occurs after deployment to an environment like dev.  This step is manual and after approval the package is deployed to the test environment.  Again functional tests are manual and after approval the package moves on teo the 
+UAT environment.  Further testing occurs and after approval package is moved to production.  The aim is to remove the manual functional test steps.

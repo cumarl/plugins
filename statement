@@ -4,3 +4,25 @@ The proposed project aims to develop a comprehensive API documentation system al
 This hackathon project not only addresses critical aspects of API development—documentation and testing but also lays the groundwork for building secure, reliable applications that meet modern software demands.
 Currently functional testing occurs after deployment to an environment like dev.  This step is manual and after approval the package is deployed to the test environment.  Again functional tests are manual and after approval the package moves on teo the 
 UAT environment.  Further testing occurs and after approval package is moved to production.  The aim is to remove the manual functional test steps.
+
+
+Problem Statement: Enhancing API Documentation and Automating Functional Testing for Deployment Efficiency
+In modern software development, well-documented APIs and robust testing frameworks are crucial for ensuring secure, reliable, and scalable applications. However, the current API development and deployment workflow lacks automation in functional testing, leading to inefficiencies and potential inconsistencies.
+
+At present, functional testing is conducted manually at multiple stages of the deployment pipeline—starting from the development environment (Dev), followed by manual approvals before advancing to test, UAT, and production environments. This manual approach not only increases the time required for release cycles but also introduces risks of human error, inconsistent testing outcomes, and delayed feedback loops.
+
+The proposed project aims to automate functional testing and enhance API documentation to streamline the deployment process. By integrating an automated API testing suite, the project will eliminate the dependency on manual validation at each stage, ensuring faster, more reliable, and repeatable testing. Additionally, a comprehensive API documentation system will improve developer collaboration, maintainability, and onboarding processes.
+
+By addressing these gaps, this initiative will enhance deployment efficiency, improve software quality, and reduce time-to-market for API-driven applications.
+
+
+
+The proposed solution aims to address these challenges by:
+
+Automating Functional Testing: Implementing a robust API test automation suite that integrates with the CI/CD pipeline, allowing continuous testing at every stage before deployment.
+Enhancing API Documentation: Developing a comprehensive and dynamic API documentation system that remains up-to-date with the latest API changes, improving accessibility for developers and stakeholders.
+By eliminating manual functional testing and ensuring well-maintained documentation, this initiative will accelerate development cycles, improve software quality, and enhance the reliability of APIs in production.
+
+Modern API-driven applications require clear documentation and comprehensive, automated testing to ensure reliability, security, and maintainability. Currently, functional testing for the APIs is performed manually after deployment to each environment—development, test, and UAT—before progressing to production. This manual process introduces delays, risks of human error, and a lack of continuous verification as changes are introduced. Additionally, the existing API documentation is neither comprehensive nor easily accessible, hindering collaboration and efficient development practices.
+
+To address these challenges, this project proposes creating a comprehensive API documentation system and implementing a robust automated testing suite. The goal is to integrate automated functional tests into the deployment pipeline, eliminating the need for repeated manual approvals and ensuring that any issues are caught earlier. By streamlining documentation and testing, teams will be able to deliver secure, reliable APIs faster while reducing operational overhead and minimizing the risk of errors.
